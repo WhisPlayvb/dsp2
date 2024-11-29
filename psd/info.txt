@@ -99,3 +99,88 @@ public class WordCount {
     FileOutputFormat.setOutputPath(job, new Path(args[1])); 
     System.exit(job.waitForCompletion(true) ? 0 : 1); 
   }
+
+
+
+
+___________________________________
+Code Breakdown
+Imports:
+
+The code imports classes from the Hadoop library, such as Mapper, Reducer, and Job, which are used for implementing the MapReduce job.
+The StringTokenizer class is used to split input text into words.
+TokenizerMapper (Mapper Class):
+
+The TokenizerMapper class extends Mapper<Object, Text, Text, IntWritable>, where:
+Input type (Object, Text): The key is the line offset or position in the file (not used here), and the value is the line of text.
+Output type (Text, IntWritable): The output key is the word (of type Text), and the output value is the count (of type IntWritable).
+Method map:
+Reads a line of input (value), tokenizes it into words using a StringTokenizer.
+For each word, it writes the word (key) and the count of 1 (value) to the context (which will be passed to the reducer).
+context.write(word, one); writes the word with a count of 1.
+IntSumReducer (Reducer Class):
+
+The IntSumReducer class extends Reducer<Text, IntWritable, Text, IntWritable>, where:
+Input type (Text, IntWritable): The input key is a word (Text), and the input value is an iterable list of word counts (IntWritable).
+Output type (Text, IntWritable): The output key is the word (Text), and the output value is the sum of the counts (IntWritable).
+Method reduce:
+Iterates over the list of word counts for each word (the values parameter).
+Sums up the counts.
+Writes the word and the total count (result.set(sum)) to the context.
+context.write(key, result); outputs the final word count.
+Main Method (Job Configuration and Execution):
+
+Configuration (conf): A Configuration object is created to configure the job.
+Job Creation (job): The Job instance is configured:
+The name of the job is set as "word count".
+The TokenizerMapper is set as the mapper class.
+The IntSumReducer is set as both the combiner and the reducer class.
+The output types are set (Text as key and IntWritable as value).
+Input and Output Paths:
+FileInputFormat.addInputPath(job, new Path(args[0])); specifies the input path (directory or file) for the job.
+FileOutputFormat.setOutputPath(job, new Path(args[1])); specifies the output path.
+Job Execution: The job is run using job.waitForCompletion(true). The exit code 0 is returned if the job completes successfully.
+Execution Flow:
+Mapper Phase:
+
+The input text is read line by line, and each word is tokenized. Each word is assigned a count of 1 and sent to the reducer.
+Shuffle and Sort Phase:
+
+Hadoop automatically shuffles and sorts the output from the mapper. The words are grouped together so that all occurrences of a particular word are sent to the same reducer.
+Reducer Phase:
+
+The reducer aggregates the counts for each word and computes the total count.
+It writes the word and its total count to the output.
+Example:
+Assume the input file contains the following lines:
+
+Copy code
+hello world
+hello hadoop
+Mapper Output:
+
+(hello, 1)
+(world, 1)
+(hello, 1)
+(hadoop, 1)
+After Shuffle and Sort:
+
+Grouped by word:
+hello: [1, 1]
+world: [1]
+hadoop: [1]
+Reducer Output:
+
+hello: 2
+world: 1
+hadoop: 1
+Final Output:
+Copy code
+hello 2
+world 1
+hadoop 1
+Running the Job:
+You would run this job on a Hadoop cluster by supplying input and output paths as command-line arguments:
+lua
+Copy code
+hadoop jar wordcount.jar WordCount /input/path /output/path
